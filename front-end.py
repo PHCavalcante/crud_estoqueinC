@@ -22,11 +22,9 @@ from flet_core import Theme
 import json
 import os
 from datetime import datetime
-import ctypes
 
 senha = "senha"
 
-clibrary = ctypes.CDLL("methods/teste.so")
 
 def main(page: ft.Page) -> None:
     page.title = "Sistema de Estoque"
@@ -46,6 +44,7 @@ def main(page: ft.Page) -> None:
         def fechar_popup(self) -> None:
             erro_popup.open = False
             page.update()
+
         erro_popup = ft.AlertDialog(
             modal=True,
             title=ft.Text("Campos Vazios"),
@@ -73,22 +72,25 @@ def main(page: ft.Page) -> None:
             botao_entrar.disabled = True
 
         page.update()
-    def dados_produtos_para_json() -> bool:
+
+    def dados_produtos_para_json() -> dict:
         id_produto = campo_id.value
         nome_produto = campo_nome_produto.value
         preco_produto = campo_preco.value
         quantidade = campo_quantidade.value
         if all([campo_id, campo_nome_produto, campo_preco, campo_quantidade]):
             dados_produto = {
-                "id": int(id_produto),
+                "id": (id_produto),
                 "nome": nome_produto,
-                "preco": float(preco_produto),
+                "preco": (preco_produto),
                 "quantidade": quantidade
             }
             json_object = json.dumps(dados_produto, indent=4)
             with open(os.path.join("data", "product_data.json"), "w") as write_file:
                 write_file.write(json_object)
-            return True
+            produtos_no_estoque = dict(id=dados_produto["id"], nome=dados_produto["nome"], preco=dados_produto["preco"],
+                                       quantidade=dados_produto["quantidade"])
+            return produtos_no_estoque
         else:
             erro_campos("teste")
 
@@ -132,6 +134,7 @@ def main(page: ft.Page) -> None:
         actions=[ft.TextButton(text="Ok", on_click=fechar_popup)],
         actions_alignment=ft.MainAxisAlignment.CENTER
     )
+
     def open_popuo() -> None:
         page.dialog = popup
         popup.open = True
@@ -140,12 +143,15 @@ def main(page: ft.Page) -> None:
     def combo_adicionar(self) -> None:
         if dados_produtos_para_json():
             open_popuo()
+            rows_dinamicas()
+            tabela_constructor()
+            page.update()
         else:
             return None
 
     def exibir_historico() -> Control:
-        historico = 0 # isso é apenas para fins de teste enqt não tenho os dados do back-end
-        if historico <=0:
+        historico = 0  # isso é apenas para fins de teste enqt não tenho os dados do back-end
+        if historico <= 0:
             return ft.Text("Nenhuma ação por aqui 😀", size=25)
         else:
             return ft.Text(str(historico), size=25)
@@ -154,7 +160,7 @@ def main(page: ft.Page) -> None:
     def excluir_produto() -> None:
     '''
 
-    def paginas_drawer(e:ControlEvent) -> None:
+    def paginas_drawer(e: ControlEvent) -> None:
         if e.control.selected_index == 0:
             page.go("/estoque")
             return None
@@ -238,79 +244,49 @@ def main(page: ft.Page) -> None:
             ft.ListTile(title=ft.Text(f"Teste"), data="teste"),
         ]
     )
-    tabela_de_produtos: DataTable = ft.DataTable(
-        width=1000,
-        # bgcolor="#30343b",
-        border_radius=10,
-        show_checkbox_column=True,
-        border=ft.border.all(1, "blue"),
-        columns=[
-            ft.DataColumn(ft.Text("ID")),
-            ft.DataColumn(ft.Text("Nome")),
-            ft.DataColumn(ft.Text("Quantidade")),
-            ft.DataColumn(ft.Text("Preço")),
-        ],
-        rows=[
-            ft.DataRow(
-                cells=[
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                ],
-                on_select_changed=lambda e: print("Teste"),
-                on_long_press=None
-            ),
-            ft.DataRow(
-                cells=[
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                ],
-                on_select_changed=lambda e: print("Teste")
-            ),
-            ft.DataRow(
-                cells=[
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                ],
-                on_select_changed=lambda e: print("Teste")
-            ),
-            ft.DataRow(
-                cells=[
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                ],
-                on_select_changed=lambda e: print("Teste")
-            ),
-            ft.DataRow(
-                cells=[
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                ],
-                on_select_changed=lambda e: print("Teste")
-            ),
-            ft.DataRow(
-                cells=[
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                    ft.DataCell(ft.Text("Placeholder")),
-                ],
-                on_select_changed=lambda e: print("Teste")
-            ),
-        ],
-    )
 
-    list : ListView = ft.ListView(expand=1, spacing=10, padding=20, auto_scroll=False)
-    list.controls.append(tabela_de_produtos)
+    def produtos_estoque(x: int):
+        estoque = dados_produtos_para_json()
+        return ft.Text(estoque[x])
+
+    def rows_dinamicas():
+        estoque = dados_produtos_para_json()
+        if estoque["id"] == "" and estoque["nome"] == "" and estoque["preco"] == "" and estoque["quantidade"] == "":
+            return ft.Text("O estoque está vazio 😥")
+        else:
+            return ft.DataRow(cells=[ft.DataCell(ft.Text(estoque["id"])), ft.DataCell(ft.Text(estoque["nome"])),
+                                     ft.DataCell(ft.Text(estoque["preco"])),
+                                     ft.DataCell(ft.Text(estoque["quantidade"]))],
+                              on_select_changed=lambda e: print("Teste"),
+                              on_long_press=None)
+
+    def tabela():
+        tabela_de_produtos: DataTable = ft.DataTable(
+            width=1000,
+            # bgcolor="#30343b",
+            border_radius=10,
+            show_checkbox_column=True,
+            border=ft.border.all(1, "blue"),
+            columns=[
+                ft.DataColumn(ft.Text("ID")),
+                ft.DataColumn(ft.Text("Nome")),
+                ft.DataColumn(ft.Text("Quantidade")),
+                ft.DataColumn(ft.Text("Preço")),
+            ],
+            rows=[
+                # ft.DataRow()
+                rows_dinamicas()
+            ],
+        )
+        return tabela_de_produtos
+
+    list: ListView = ft.ListView(expand=1, spacing=10, padding=20, auto_scroll=False)
+
+    def tabela_constructor():
+        list.controls.append(tabela())
+        page.update()
+
+    tabela_constructor()
 
     def trocando_paginas(e: RouteChangeEvent) -> None:
         page.views.clear()
@@ -346,7 +322,7 @@ def main(page: ft.Page) -> None:
                     controls=[AppBar(
                         title=Text("Gerenciamento do Estoque",
                                    font_family="Montserrat ExtraLight"),
-                       # bgcolor="#30343b",
+                        # bgcolor="#30343b",
                         center_title=True, ),
                         Container(
                             content=ft.ElevatedButton("Histórico", icon=ft.icons.HISTORY, on_click=entrar_historico),
@@ -390,15 +366,14 @@ def main(page: ft.Page) -> None:
                     drawer=drawer,
                     route="/historico",
                     controls=[AppBar(title=Text("Historico", font_family="Montserrat ExtraLight"),
-                                    # bgcolor="#30343b",
-                                     center_title=True,),
+                                     # bgcolor="#30343b",
+                                     center_title=True, ),
                               exibir_historico()
                               ],
                     vertical_alignment=MainAxisAlignment.CENTER,
                     horizontal_alignment=CrossAxisAlignment.CENTER,
                 )
             )
-
 
     def view_pop(e: ViewPopEvent) -> None:
         page.views.pop()
